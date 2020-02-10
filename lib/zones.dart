@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'dart:async';
+
+import 'package:shared_preferences/shared_preferences.dart';
 
 //const baseURL = "http://localhost:8080/zones.json";
 const baseURL = "http://home-pi.local:8181/zones";
@@ -15,6 +19,23 @@ class ZoneAPI {
     return await http.get(url);
   }
 
+  // static List<Zone> getZonesWithLabels() {
+  //   var url = baseURL;
+  //   final sharedPrefs = await SharedPreferences.getInstance();
+  //   var zones= List<Zone>();
+  //   // await http.get(url).then((response) {
+  //   //   String zoneLabelString = sharedPrefs.getString("ZONES");
+  //   //   Map<String, String> zoneLabelMap = json.decode(zoneLabelString);
+
+  //   //   Iterable list = json.decode(response.body);
+  //   //   zones = list.map((model) { 
+  //   //     Zone zone = Zone.fromJson(model);
+  //   //     zone.label = zoneLabelMap[zone.zone];
+  //   //   }).toList();
+  //   // });
+  //   return zones;// (response) => print('hi'));
+  // }
+
   static Future<http.Response> changeZone(String zone, String setting, String adjustment) async {
     var url = "$baseURL/$zone/$setting/";
     return await http.post(url, body: adjustment);
@@ -28,19 +49,21 @@ class Zone {
   final String mute; //mu
   final String volume; //vo
   final String channel; //ch
-  final String power; //pr
+  final String power; 
+  String label;//pr
 
-  Zone({this.zone, this.mute, this.volume, this.channel, this.power});
+  Zone({this.zone, this.mute, this.volume, this.channel, this.power, this.label});
   
   Zone.fromJson(Map json) 
     : zone = json['zone'],
       mute = json['mu'],
       volume = json['vo'],
       channel = json['ch'],
-      power = json['pr'];
+      power = json['pr'],
+      label = json['label'];
   
   Map toJson() {
-    return { 'zone': zone, 'mute': mute, 'volume': volume, 'channel': channel, 'power': power};
+    return { 'zone': zone, 'mute': mute, 'volume': volume, 'channel': channel, 'power': power, 'label': label};
   }
 
   String powerAdjust(int adjust) {

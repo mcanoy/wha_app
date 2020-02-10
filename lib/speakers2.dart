@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:wha_flutter/zones.dart';
 
-class SpeakerWidget extends StatefulWidget {
+class Speaker2Widget extends StatefulWidget {
   @override
-  _SpeakerWidgetState createState() => _SpeakerWidgetState();
+  _Speaker2WidgetState createState() => _Speaker2WidgetState();
 }
 
-class _SpeakerWidgetState extends State<SpeakerWidget> {
+class _Speaker2WidgetState extends State<Speaker2Widget> {
   var _zones = new List<Zone>();
   Color c = Colors.blue[800];
 
@@ -99,6 +99,7 @@ class _SpeakerWidgetState extends State<SpeakerWidget> {
         if (isPowerOn(index)) {
           _toggleZoneProperty(index, "mu");
         }
+        ;
       },
       color: _toggleColor(index),
     );
@@ -120,6 +121,7 @@ class _SpeakerWidgetState extends State<SpeakerWidget> {
                 ? _adjustVolume(index, 1)
                 : _adjustVolume(index, -1);
           }
+          ;
         },
         color: _getPowerColor(index),
       ),

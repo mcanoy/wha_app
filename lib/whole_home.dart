@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:wha_flutter/google_home.dart';
+import 'package:wha_flutter/model/pages.dart';
+import 'package:wha_flutter/pages/settings.dart';
 import 'package:wha_flutter/speakers.dart';
+import 'package:wha_flutter/test.dart';
+import 'package:wha_flutter/test2.dart';
 
 class WholeHomeAudio extends StatefulWidget {
   @override
@@ -7,48 +12,67 @@ class WholeHomeAudio extends StatefulWidget {
 }
 
 class _WholeHomeAudioState extends State<WholeHomeAudio> {
-  final appBar = AppBar(
-      title: Text(
-    "Whole Home Audio",
-    style: TextStyle(fontSize: 18.0),
-  ));
+  var _selectedIndex = 0; //default
+  final List<Page> _screens = [
+    Page("Whole Home Audio", SpeakerWidget(), 0, Icons.speaker),
+    Page("Let's Talk", LetsTalk(), 1, Icons.record_voice_over),
+    Page("Test", TestWidget(), 2, Icons.ac_unit),
+    Page("Test 2", MyApp(), 3, Icons.receipt),
+  ];
+
+  void setIndex(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  List<Widget> _bottomNavItems() {
+    List<Widget> navItems = new List<Widget>();
+    for(Page p in _screens) {
+      navItems.add(IconButton(
+      icon: Icon(p.iconData),
+      onPressed: () {
+        setIndex(p.index);
+      },
+    ));
+    }
+
+    return navItems;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: appBar,
-      body: SpeakerWidget(),
+      appBar: AppBar(
+          title: Text(
+        _screens[_selectedIndex].title,
+        style: TextStyle(fontSize: 18.0),
+      )),
+      body: _screens[_selectedIndex].widget,
       drawer: Drawer(
         child: ListView(
           children: <Widget>[
             ListTile(
-              title: Text("Settings"),
+              title: Text("Zone Settings"),
               trailing: Icon(Icons.arrow_forward),
               onTap: () {
                 Navigator.of(context).pop();
                 Navigator.of(context).push(MaterialPageRoute(
-                    builder: (BuildContext context) => FirstRoute()));
+                    builder: (BuildContext context) => SettingsWidget()));
               },
             )
           ],
         ),
       ),
       bottomNavigationBar: new Container(
-        height: 50.0,
+        height: 70.0,
         alignment: Alignment.center,
         child: new BottomAppBar(
           child: new Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: <Widget>[
-                new IconButton(
-                  icon: Icon(Icons.speaker),
-                  onPressed: () {},
-                ),
-                new IconButton(
-                  icon: Icon(Icons.record_voice_over),
-                  onPressed: () {},
-                ),
-              ]),
+              children: 
+                _bottomNavItems(),
+              ),
         ),
       ),
     );
