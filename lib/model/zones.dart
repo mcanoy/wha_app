@@ -1,9 +1,5 @@
-import 'dart:convert';
-
 import 'package:http/http.dart' as http;
 import 'dart:async';
-
-import 'package:shared_preferences/shared_preferences.dart';
 
 //const baseURL = "http://localhost:8080/zones.json";
 const baseURL = "http://home-pi.local:8181/zones";
@@ -14,30 +10,14 @@ class ZoneAPI {
     return http.get(url);
   }
 
-  static Future<http.Response> getZones() async {
-    var url = baseURL;
-    return await http.get(url);
+  static Future<http.Response> getZones(String url) async {
+    print("zones.dart Base Url: $url");
+    return await http.get("$url/zones");
   }
 
-  // static List<Zone> getZonesWithLabels() {
-  //   var url = baseURL;
-  //   final sharedPrefs = await SharedPreferences.getInstance();
-  //   var zones= List<Zone>();
-  //   // await http.get(url).then((response) {
-  //   //   String zoneLabelString = sharedPrefs.getString("ZONES");
-  //   //   Map<String, String> zoneLabelMap = json.decode(zoneLabelString);
-
-  //   //   Iterable list = json.decode(response.body);
-  //   //   zones = list.map((model) { 
-  //   //     Zone zone = Zone.fromJson(model);
-  //   //     zone.label = zoneLabelMap[zone.zone];
-  //   //   }).toList();
-  //   // });
-  //   return zones;// (response) => print('hi'));
-  // }
-
-  static Future<http.Response> changeZone(String zone, String setting, String adjustment) async {
+  static Future<http.Response> changeZone(String baseUrl, String zone, String setting, String adjustment) async {
     var url = "$baseURL/$zone/$setting/";
+    print("Chage zone $url"); 
     return await http.post(url, body: adjustment);
   }
 

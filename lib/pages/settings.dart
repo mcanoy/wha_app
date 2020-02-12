@@ -2,9 +2,9 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wha_flutter/model/settings_model.dart';
-import 'package:wha_flutter/zones.dart';
+import 'package:wha_flutter/model/zones.dart';
+import 'package:wha_flutter/pages/settings_view.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:validators/validators.dart';
@@ -19,7 +19,7 @@ class _SettingsWidgetState extends State<SettingsWidget> {
 
   int currentStep = 0;
   int totalSteps = 2;
-  bool complete = false;
+  bool complete = true;
   bool validUrl = true;
   SettingsState settingsState;
   String zoneLabels;
@@ -28,6 +28,13 @@ class _SettingsWidgetState extends State<SettingsWidget> {
   var zoneControllerMap = Map<String, TextEditingController>();
 
   Settings settings = Settings();
+
+  void initState() {
+    super.initState();
+    final settingsNotifier =
+              Provider.of<SettingsNotifier>(context, listen: false);
+    settings.url = settingsNotifier.baseUrl;
+  }
 
   next() {
     if (currentStep == 0) {
@@ -116,11 +123,11 @@ class _SettingsWidgetState extends State<SettingsWidget> {
   }
 
   FloatingActionButton _editButton() {
-    return !complete ? null : FloatingActionButton(
-        child: Icon(Icons.edit),
+    return FloatingActionButton(
+        child: Icon(complete ? Icons.edit : Icons.cancel),
         onPressed: () {
           setState(() {
-            complete = false;
+            complete = !complete;
             currentStep = 0;
           });
         },
@@ -133,7 +140,7 @@ class _SettingsWidgetState extends State<SettingsWidget> {
     final zoneLabelMap = settingsNotifier.getZoneMap();
     if (serverUrlController.text == "FIRST") {
       serverUrlController.text = settingsNotifier.baseUrl;
-    } else if(settings.url.isNotEmpty) {
+    } else if(!complete && settings.url.isNotEmpty) {
       serverUrlController.text = settings.url;
     }
 
@@ -143,22 +150,7 @@ class _SettingsWidgetState extends State<SettingsWidget> {
       ),
       floatingActionButton: _editButton(),
       body: complete
-          ? ListView.separated(
-              separatorBuilder: (context, index) => Divider(),
-              itemCount: settings.zones.length + 1,
-              itemBuilder: (context, index) {
-                if(index == 0) {
-                  return ListTile(
-                    leading: Icon(Icons.link, color: Colors.red[300]),
-                    title: Text(settings.url),
-                  );
-                } else {
-                  return ListTile(
-                    leading: Icon(Icons.speaker, color: Colors.brown[400],),
-                    title: Text(zoneLabelMap[settings.zones[index-1].zone]),
-                    subtitle: Text("Zone " + settings.zones[index-1].zone),);
-                }
-              })
+          ? SettingsReadOnly()
           : Column(
               children: <Widget>[
                 Expanded(

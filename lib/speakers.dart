@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:wha_flutter/zones.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wha_flutter/model/settings_model.dart';
+import 'package:wha_flutter/model/zones.dart';
 
 class SpeakerWidget extends StatefulWidget {
   @override
@@ -10,15 +13,18 @@ class SpeakerWidget extends StatefulWidget {
 class _SpeakerWidgetState extends State<SpeakerWidget> {
   var _zones = new List<Zone>();
   Color c = Colors.blue[800];
+  String baseUrl;
 
   @override
   void initState() {
     super.initState();
-    this._getZones();
+    SharedPreferences.getInstance().then((SharedPreferences sp) {
+      baseUrl = sp.getString(SettingsNotifier.BASE_URL);
+      _getZones();
+    });
   }
 
   void _toggleZoneProperty(int index, String property) {
-    print("toggle");
     Zone zone = _zones[index];
     var toggleValue = "";
     if (property == "pr") {
@@ -30,52 +36,37 @@ class _SpeakerWidgetState extends State<SpeakerWidget> {
     toggleValue = toggleValue == "00" ? "01" : "00";
     print("toggle $property $toggleValue");
 
-    ZoneAPI.changeZone(_zones[index].zone, property, toggleValue)
+    ZoneAPI.changeZone(baseUrl, _zones[index].zone, property, toggleValue)
         .then((response) => _getZones());
   }
 
   void _adjustVolume(int index, int adjustment) async {
     print("volume adjust $adjustment");
-    ZoneAPI.changeZone(
-            _zones[index].zone, "vo", _zones[index].powerAdjust(adjustment))
+    ZoneAPI.changeZone(baseUrl, _zones[index].zone, "vo",
+            _zones[index].powerAdjust(adjustment))
         .then((response) => _getZones());
   }
 
   void _adjustChannel(int index, int adjustment) async {
     print("channel adjust $adjustment");
 
-    ZoneAPI.changeZone(
-            _zones[index].zone, "ch", _zones[index].channelAdjust(adjustment))
+    ZoneAPI.changeZone(baseUrl, _zones[index].zone, "ch",
+            _zones[index].channelAdjust(adjustment))
         .then((response) => _getZones());
   }
 
-  void _getZones() async {
+  void _getZones() {
     print('_getZones');
-    await ZoneAPI.getZones().then((response) {
+    ZoneAPI.getZones(baseUrl).then((response) {
       setState(() {
         Iterable list = json.decode(response.body);
         _zones = list.map((model) => Zone.fromJson(model)).toList();
-        print(_zones.length);
 
         if (_zones == null) {
           _zones = [];
         }
       });
     });
-  }
-
-  var _zoneNameMap = {
-    "11": "Den",
-    "12": "Office",
-    "13": "Living",
-    "14": "Dining",
-    "15": "Bed",
-    "16": "Bath"
-  };
-
-  String _getName(int index) {
-    Zone zone = _zones[index];
-    return _zoneNameMap[zone.zone];
   }
 
   bool isPowerOn(int index) {
@@ -157,10 +148,7 @@ class _SpeakerWidgetState extends State<SpeakerWidget> {
           leading: IconButton(
               icon: Icon(Icons.power_settings_new),
               color: _getPowerColor(index),
-              onPressed: () {
-                print("power switch");
-                _toggleZoneProperty(index, "pr");
-              }),
+              onPressed: (() => _toggleZoneProperty(index, "pr"))),
           trailing: CircleAvatar(
             backgroundColor: Colors.blue[200],
             child: Text(
@@ -173,11 +161,15 @@ class _SpeakerWidgetState extends State<SpeakerWidget> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
-                  Text(
-                    _getName(index),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18.0,
+                  Consumer<SettingsNotifier>(
+                    builder: (_, settings, __) => Text(
+                      settings.getZoneMap().length != _zones.length
+                          ? _zones[index].zone
+                          : settings.getZoneMap()[_zones[index].zone],
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18.0,
+                      ),
                     ),
                   ),
                 ],

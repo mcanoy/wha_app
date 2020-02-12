@@ -3,7 +3,7 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:wha_flutter/zones.dart';
+import 'package:wha_flutter/model/zones.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsError extends Error {
@@ -16,7 +16,7 @@ class SettingsNotifier with ChangeNotifier {
   static const BASE_URL = "baseURL";
   static const ZONE = "zones";
 
-  SettingsState _currentSettings = SettingsState("http://home-pi.local:8182", "{ \"1\" : \" Zone 1\"}");
+  SettingsState _currentSettings = SettingsState("nada", "{ \"1\" : \" Zone 1\"}");
 
   SettingsNotifier() {
     _loadSettings();
@@ -26,7 +26,8 @@ class SettingsNotifier with ChangeNotifier {
     final sharedPrefs = await SharedPreferences.getInstance();
     print("shared setting " + sharedPrefs.get(BASE_URL));
     var baseUrl =
-        sharedPrefs.getString(BASE_URL ?? "http://home-pi.local:8183");
+        sharedPrefs.getString(BASE_URL ?? "not set2");
+        print("Base url set to $baseUrl");
     var zones = sharedPrefs.getString(ZONE ?? "{ \"2\" : \" Zone 2\"}");
     _currentSettings = SettingsState(baseUrl, zones);
     notifyListeners();
@@ -46,19 +47,11 @@ class SettingsNotifier with ChangeNotifier {
     await sharedPrefs.setString(pref, value);
   }
 
-  // Future<void> _saveAllSettings() async {
-  //   var sharedPrefs = await SharedPreferences.getInstance();
-  //   print("saving setting"+ _currentSettings.baseUrl);
-  //   await sharedPrefs.setString(BASE_URL, _currentSettings.baseUrl);
-  //   await sharedPrefs.setString(ZONE, _currentSettings.zones);
-  // }
-
   String get baseUrl => _currentSettings.baseUrl;
 
   set baseUrl(String newBaseUrl) {
     if (newBaseUrl == _currentSettings.baseUrl) return;
 
-    print("is this called $newBaseUrl" );
     _currentSettings = SettingsState(newBaseUrl, _currentSettings.zones);
     notifyListeners();
     _saveNewURLSettings();

@@ -35,25 +35,42 @@ class _MyCustomFormState extends State<MyCustomForm> {
 
   @override
   Widget build(BuildContext context) {
-    final settingsNotifier = Provider.of<SettingsNotifier>(context);
-    final zoneLabelMap = settingsNotifier.getZoneMap();
     return Scaffold(
       appBar: AppBar(
         title: Consumer<SettingsNotifier>(
-          builder: (_, settings, __) => Text(settings.baseUrl)),
+            builder: (_, settings, __) => Text(settings.baseUrl)),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(1.0),
         child: Consumer<SettingsNotifier>(
-          builder: (_, settings, __) => Text(
-            zoneLabelMap["13"].toString()),
-        ),
+            builder: (_, settings, __) => ListView.separated(
+                separatorBuilder: (context, index) => Divider(),
+                itemCount: settings.getZoneMap().length + 1,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return ListTile(
+                      leading: Icon(Icons.link, color: Colors.red[300]),
+                      title: Text(settings.baseUrl),
+                    );
+                  } else {
+                    String key =
+                        settings.getZoneMap().keys.elementAt(index - 1);
+                    return ListTile(
+                      leading: Icon(
+                        Icons.speaker_group,
+                        color: Colors.brown[400],
+                      ),
+                      title: Text(settings.getZoneMap()[key]),
+                      subtitle: Text("Zone " + key),
+                    );
+                  }
+                })),
       ),
       floatingActionButton: FloatingActionButton(
         // When the user presses the button, show an alert dialog containing
         // the text that the user has entered into the text field.
         onPressed: () {
-          settingsNotifier.baseUrl = myController.text;
+          //settingsNotifier.baseUrl = myController.text;
           return showDialog(
             context: context,
             builder: (context) {
