@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:wha_flutter/google_home.dart';
+
 import 'package:wha_flutter/model/pages.dart';
+import 'package:wha_flutter/pages/google_home.dart';
 import 'package:wha_flutter/pages/settings.dart';
-import 'package:wha_flutter/speakers.dart';
+import 'package:wha_flutter/pages/speakers.dart';
 import 'package:wha_flutter/test.dart';
 import 'package:wha_flutter/test2.dart';
 
@@ -28,13 +29,13 @@ class _WholeHomeAudioState extends State<WholeHomeAudio> {
 
   List<Widget> _bottomNavItems() {
     List<Widget> navItems = new List<Widget>();
-    for(Page p in _screens) {
+    for (Page p in _screens) {
       navItems.add(IconButton(
-      icon: Icon(p.iconData),
-      onPressed: () {
-        setIndex(p.index);
-      },
-    ));
+        icon: Icon(p.iconData),
+        onPressed: () {
+          setIndex(p.index);
+        },
+      ));
     }
 
     return navItems;
@@ -69,10 +70,9 @@ class _WholeHomeAudioState extends State<WholeHomeAudio> {
         alignment: Alignment.center,
         child: new BottomAppBar(
           child: new Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: 
-                _bottomNavItems(),
-              ),
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: _bottomNavItems(),
+          ),
         ),
       ),
     );

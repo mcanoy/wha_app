@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wha_flutter/model/settings_model.dart';
-import 'package:wha_flutter/whole_home.dart';
+import 'package:wha_flutter/pages/whole_home.dart';
 
 void main() => runApp(WholeHomeAudioApp());
 
