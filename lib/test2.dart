@@ -1,90 +1,139 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:wha_flutter/model/settings_model.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Retrieve Text Input',
-      home: MyCustomForm(),
-    );
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  final _formKey = GlobalKey<FormState>();
+  var _phrase;
+
+  void _googleSay() {
+    print("google say $_phrase");
+    http.get("http://home-pi.local:8181/google/talk?phrase=$_phrase");
   }
-}
 
-// Define a custom Form widget.
-class MyCustomForm extends StatefulWidget {
-  @override
-  _MyCustomFormState createState() => _MyCustomFormState();
-}
+  void _ronSwanson() {
+    http.get("https://ron-swanson-quotes.herokuapp.com/v2/quotes")
+    .then((response) => {
+        setState(() {
+          _phrase = "Ron Swanson says " + json.decode(response.body)[0];
+          _googleSay();
+      })
+    });
+  }
 
-// Define a corresponding State class.
-// This class holds the data related to the Form.
-class _MyCustomFormState extends State<MyCustomForm> {
-  // Create a text controller and use it to retrieve the current value
-  // of the TextField.
-  final myController = TextEditingController();
-
-  @override
-  void dispose() {
-    // Clean up the controller when the widget is disposed.
-    myController.dispose();
-    super.dispose();
+  void _nextGame(var team) {
+    http.get("http://home-pi.local:8181/next/$team");
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Consumer<SettingsNotifier>(
-            builder: (_, settings, __) => Text(settings.baseUrl)),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(1.0),
-        child: Consumer<SettingsNotifier>(
-            builder: (_, settings, __) => ListView.separated(
-                separatorBuilder: (context, index) => Divider(),
-                itemCount: settings.getZoneMap().length + 1,
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return ListTile(
-                      leading: Icon(Icons.link, color: Colors.red[300]),
-                      title: Text(settings.baseUrl),
-                    );
-                  } else {
-                    String key =
-                        settings.getZoneMap().keys.elementAt(index - 1);
-                    return ListTile(
-                      leading: Icon(
-                        Icons.speaker_group,
-                        color: Colors.brown[400],
-                      ),
-                      title: Text(settings.getZoneMap()[key]),
-                      subtitle: Text("Zone " + key),
-                    );
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              AppBar(
+                leading: Icon(Icons.verified_user),
+                elevation: 0,
+                title: Text('Google Say'),
+                backgroundColor: Colors.blue[500],
+                centerTitle: true,
+                actions: <Widget>[  
+                  IconButton(
+                    icon: Icon(Icons.delete),
+                    onPressed: () {},
+                  )
+                ],
+              ),
+              TextFormField(
+                decoration: const InputDecoration(
+                  icon: Icon(Icons.mic),
+                  labelText: 'Google Say This',
+                ),
+                validator: (value) {
+                  if (value.isEmpty) {
+                    return "Don't forget to enter something to say";
                   }
-                })),
-      ),
-      floatingActionButton: FloatingActionButton(
-        // When the user presses the button, show an alert dialog containing
-        // the text that the user has entered into the text field.
-        onPressed: () {
-          //settingsNotifier.baseUrl = myController.text;
-          return showDialog(
-            context: context,
-            builder: (context) {
-              return AlertDialog(
-                // Retrieve the text the that user has entered by using the
-                // TextEditingController.
-                content: Text(myController.text),
-              );
-            },
-          );
-        },
-        tooltip: 'Show me the value!',
-        child: Icon(Icons.text_fields),
-      ),
+                  return null;
+                },
+                onSaved: (val) => _phrase = val,
+              ),
+              SizedBox(height: 10,),
+              SizedBox(
+                width: double.infinity,
+                child: RaisedButton(
+                  onPressed: () {
+                    if (_formKey.currentState.validate()) {
+                      Scaffold.of(context).showSnackBar(
+                          SnackBar(content: Text('Translating...')));
+                      _formKey.currentState.save();
+                      _googleSay();
+                    }
+                  },
+                  color: Colors.blue,
+                  child: Text('Say', style: TextStyle(color: Colors.white)),
+                ),
+              ),
+              SizedBox(height: 20,),
+              AppBar(
+                leading: Icon(Icons.verified_user),
+                elevation: 0,
+                title: Text('Direct Hits'),
+                backgroundColor: Colors.blue[500],
+                centerTitle: true,
+                actions: <Widget>[  
+                  IconButton(
+                    icon: Icon(Icons.delete),
+                    onPressed: () {},
+                  )
+                ],
+              ),
+              SizedBox(height: 10,),
+              SizedBox(
+                width: double.infinity,
+                child: RaisedButton(
+                  onPressed: () {
+                      _nextGame("leafs");
+
+                  },
+                  color: Colors.blue[50],
+                  child: Text('Leafs', style: TextStyle(color: Colors.blue)),
+                ),
+              ),
+              SizedBox(height: 2,),
+              SizedBox(
+                width: double.infinity,
+                child: RaisedButton(
+                  onPressed: () {
+                      _nextGame("raptor");
+
+                  },
+                  color: Colors.white,
+                  child: Text('Raptors', style: TextStyle(color: Colors.purple)),
+                ),
+              ),
+              SizedBox(height: 2,),
+              SizedBox(
+                width: double.infinity,
+                child: RaisedButton(
+                  onPressed: () {
+                      _ronSwanson();
+
+                  },
+                  color: Colors.white,
+                  child: Text('Ron Swanson', style: TextStyle(color: Colors.red)),
+                ),
+              ),
+            ],
+          )),
+          
     );
   }
 }
