@@ -32,7 +32,7 @@ class _SettingsWidgetState extends State<SettingsWidget> {
   void initState() {
     super.initState();
     final settingsNotifier =
-              Provider.of<SettingsNotifier>(context, listen: false);
+        Provider.of<SettingsNotifier>(context, listen: false);
     settings.url = settingsNotifier.baseUrl;
   }
 
@@ -61,33 +61,31 @@ class _SettingsWidgetState extends State<SettingsWidget> {
           Iterable list = json.decode(response.body);
 
           zones = list.map((model) => Zone.fromJson(model)).toList();
+
           settings.zones = zones;
           validUrl = true;
           success = true;
           serverUrlController.text = '';
-          final settingsNotifier =
-              Provider.of<SettingsNotifier>(context, listen: false);
-          print(" zones " + settingsNotifier.zones);
         } catch (e) {
-          print('caught');
+          print('settings.dart caught' + e.toString());
           settings.zones = [];
         }
         setState(() {
-          print("zones " + zones.length.toString());
+          print("settings.dart zones " + zones.length.toString());
           settings.zones = zones;
           validUrl = success;
           if (success) currentStep = 1;
         });
       }).catchError((e) {
         setState(() {
-      validUrl = success;
-    });
+          validUrl = success;
+        });
       });
     } else {
       print("validator => this not a url");
       setState(() {
-      validUrl = success;
-    });
+        validUrl = success;
+      });
     }
   }
 
@@ -124,23 +122,26 @@ class _SettingsWidgetState extends State<SettingsWidget> {
 
   FloatingActionButton _editButton() {
     return FloatingActionButton(
-        child: Icon(complete ? Icons.edit : Icons.cancel),
-        onPressed: () {
-          setState(() {
-            complete = !complete;
-            currentStep = 0;
-          });
-        },
-      );
+      child: Icon(complete ? Icons.edit : Icons.cancel),
+      onPressed: () {
+        setState(() {
+          complete = !complete;
+          currentStep = 0;
+        });
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final settingsNotifier = Provider.of<SettingsNotifier>(context);
     final zoneLabelMap = settingsNotifier.getZoneMap();
+    print("update url: ${serverUrlController.text}");
+    print(serverUrlController.text == "FIRST");
+    print(settingsNotifier.baseUrl);
     if (serverUrlController.text == "FIRST") {
-      serverUrlController.text = settingsNotifier.baseUrl;
-    } else if(!complete && settings.url.isNotEmpty) {
+      serverUrlController.text = settingsNotifier.baseUrl ?? '';
+    } else if (!complete && settings.url != null && settings.url.isNotEmpty) {
       serverUrlController.text = settings.url;
     }
 
@@ -187,7 +188,9 @@ class _SettingsWidgetState extends State<SettingsWidget> {
                             children: <Widget>[
                               for (Zone zone in settings.zones)
                                 TextFormField(
-                                    initialValue: zoneLabelMap[zone.zone],
+                                    initialValue: zoneLabelMap == null
+                                        ? null
+                                        : zoneLabelMap[zone.zone],
                                     decoration:
                                         InputDecoration(labelText: zone.zone),
                                     onSaved: (String value) {

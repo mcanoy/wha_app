@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wha_flutter/model/settings_model.dart';
 
 class LetsTalk extends StatefulWidget {
   @override
@@ -10,10 +12,19 @@ class LetsTalk extends StatefulWidget {
 class _LetsTalkState extends State<LetsTalk> {
   final form = GlobalKey<FormState>();
   var _phrase;
+  String _baseUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    SharedPreferences.getInstance().then((SharedPreferences sp) {
+      _baseUrl = sp.getString(SettingsNotifier.BASE_URL);
+    });
+  }
 
   void _googleSay() {
     print("google say $_phrase");
-    http.get("http://home-pi.local:8181/google/talk?phrase=$_phrase");
+    http.get("$_baseUrl/google/talk?phrase=$_phrase");
   }
 
   void _nextGame(var team) {
@@ -28,7 +39,7 @@ class _LetsTalkState extends State<LetsTalk> {
                 })
               });
     } else {
-      http.get("http://home-pi.local:8181/next/$team");
+      http.get("$_baseUrl/next/$team");
     }
   }
 

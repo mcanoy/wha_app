@@ -16,7 +16,7 @@ class SettingsNotifier with ChangeNotifier {
   static const BASE_URL = "baseURL";
   static const ZONE = "zones";
 
-  SettingsState _currentSettings = SettingsState("nada", "{ \"1\" : \" Zone 1\"}");
+  SettingsState _currentSettings = SettingsState("nada", null, null);
 
   SettingsNotifier() {
     _loadSettings();
@@ -24,12 +24,17 @@ class SettingsNotifier with ChangeNotifier {
 
   Future<void> _loadSettings() async {
     final sharedPrefs = await SharedPreferences.getInstance();
-    print("shared setting " + sharedPrefs.get(BASE_URL));
-    var baseUrl =
-        sharedPrefs.getString(BASE_URL ?? "not set2");
-        print("Base url set to $baseUrl");
-    var zones = sharedPrefs.getString(ZONE ?? "{ \"2\" : \" Zone 2\"}");
-    _currentSettings = SettingsState(baseUrl, zones);
+    print("settings_model.dart shared setting ${sharedPrefs.get(BASE_URL)}");
+    var baseUrl = sharedPrefs.getString(BASE_URL);
+    var zones = sharedPrefs.getString(ZONE);
+    List<Zone> zoneList;
+
+    if(baseUrl != null) {
+      ZoneAPI.getZones(baseUrl).then((response) {
+        refreshZones();
+      });
+    }
+    _currentSettings = SettingsState(baseUrl, zones, zoneList);
     notifyListeners();
   }
 
@@ -39,12 +44,29 @@ class SettingsNotifier with ChangeNotifier {
 
   Future<void> _saveZoneSettings() async {
     _saveNewSettings(ZONE, _currentSettings.zones);
+    refreshZones();
   }
 
   Future<void> _saveNewSettings(String pref, String value) async {
     var sharedPrefs = await SharedPreferences.getInstance();
-    print("saving setting: pref $pref value $value");
+    print(
+        "settings_model.dart._saveNewSettings saving setting: pref $pref value $value");
     await sharedPrefs.setString(pref, value);
+  }
+
+  Future<void> refreshZones() async {
+    List<Zone> zoneList;
+    ZoneAPI.getZones(baseUrl).then((response) {
+      Iterable list = json.decode(response.body);
+      zoneList = list.map((model) => Zone.fromJson(model)).toList();
+
+      if (zoneList == null) {
+        zoneList = [];
+      }
+
+      _currentSettings = SettingsState(baseUrl, zones, zoneList);
+      notifyListeners();
+    });
   }
 
   String get baseUrl => _currentSettings.baseUrl;
@@ -52,22 +74,43 @@ class SettingsNotifier with ChangeNotifier {
   set baseUrl(String newBaseUrl) {
     if (newBaseUrl == _currentSettings.baseUrl) return;
 
-    _currentSettings = SettingsState(newBaseUrl, _currentSettings.zones);
+    _currentSettings = SettingsState(
+        newBaseUrl, _currentSettings.zones, _currentSettings.zoneList);
     notifyListeners();
     _saveNewURLSettings();
   }
 
+  List<Zone> get zoneList => _currentSettings.zoneList;
+
   String get zones => _currentSettings.zones;
 
   Map<String, dynamic> getZoneMap() {
+    if (_currentSettings.zones == null) {
+      return null;
+    }
     return json.decode(_currentSettings.zones);
   }
 
+  String getZoneLabel(int index) {
+    List<Zone> zoneList = _currentSettings.zoneList;
+
+    //Does zone exist
+    if (_currentSettings.zones == null ||
+        zoneList == null ||
+        index >= zoneList.length ||
+        zoneList.elementAt(index) == null) {
+      return null;
+    }
+    Zone zone = _currentSettings.zoneList.elementAt(index);
+
+    return getZoneMap()[zone.zone];
+  }
+
   set zones(String newZones) {
-    if(newZones == _currentSettings.zones) return;
-  
-    print("is this called $zones");
-    _currentSettings = SettingsState(_currentSettings.baseUrl, newZones);
+    if (newZones == _currentSettings.zones) return;
+
+    _currentSettings = SettingsState(
+        _currentSettings.baseUrl, newZones, _currentSettings.zoneList);
     notifyListeners();
     _saveZoneSettings();
   }
@@ -76,8 +119,9 @@ class SettingsNotifier with ChangeNotifier {
 class SettingsState {
   final String baseUrl;
   final String zones;
+  final List<Zone> zoneList;
 
-  const SettingsState(this.baseUrl, this.zones);
+  const SettingsState(this.baseUrl, this.zones, this.zoneList);
 }
 
 class Settings {
@@ -89,11 +133,10 @@ class Settings {
   String getZoneLabelMap() {
     Map zoneLabelMap = HashMap<String, String>();
 
-    for(Zone zone in zones) {
+    for (Zone zone in zones) {
       zoneLabelMap.putIfAbsent(zone.zone, () => zone.label);
     }
 
     return json.encode(zoneLabelMap);
   }
-  
 }

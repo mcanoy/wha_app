@@ -10,12 +10,12 @@ class SettingsReadOnly extends StatelessWidget {
       child: Consumer<SettingsNotifier>(
           builder: (_, settings, __) => ListView.separated(
               separatorBuilder: (context, index) => Divider(),
-              itemCount: settings.getZoneMap().length + 1,
+              itemCount: settings.getZoneMap() == null ? 1 : settings.getZoneMap().length + 1,
               itemBuilder: (context, index) {
                 if (index == 0) {
                   return ListTile(
                     leading: Icon(Icons.link, color: Colors.red[300]),
-                    title: Text(settings.baseUrl),
+                    title: Text(settings.baseUrl?? "Url Not Set"),
                   );
                 } else {
                   String key = settings.getZoneMap().keys.elementAt(index - 1);
@@ -24,7 +24,7 @@ class SettingsReadOnly extends StatelessWidget {
                       Icons.speaker_group,
                       color: Colors.brown[400],
                     ),
-                    title: Text(settings.getZoneMap()[key]),
+                    title: Text(settings.getZoneMap()[key]?? key),
                     subtitle: Text("Zone " + key),
                   );
                 }

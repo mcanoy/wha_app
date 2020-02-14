@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'package:wha_flutter/model/pages.dart';
+import 'package:wha_flutter/model/settings_model.dart';
 import 'package:wha_flutter/pages/google_home.dart';
 import 'package:wha_flutter/pages/settings.dart';
 import 'package:wha_flutter/pages/speakers.dart';
@@ -14,6 +16,7 @@ class WholeHomeAudio extends StatefulWidget {
 
 class _WholeHomeAudioState extends State<WholeHomeAudio> {
   var _selectedIndex = 0; //default
+  final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
   final List<Page> _screens = [
     Page("Whole Home Audio", SpeakerWidget(), 0, Icons.speaker),
     Page("Let's Talk", LetsTalk(), 1, Icons.record_voice_over),
@@ -44,12 +47,47 @@ class _WholeHomeAudioState extends State<WholeHomeAudio> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
           title: Text(
         _screens[_selectedIndex].title,
         style: TextStyle(fontSize: 18.0),
       )),
-      body: _screens[_selectedIndex].widget,
+      body: Consumer<SettingsNotifier>(builder: (_, settings, __) {
+        print("wha.dart ${settings.baseUrl} -- ${settings.zoneList}");
+        if (settings.baseUrl == null) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  'Not Server Set. Click to set up.',
+                  style: TextStyle(fontSize: 18),
+                ),
+                FlatButton.icon(
+                  color: Colors.blue[100],
+                  icon: Icon(Icons.add_to_home_screen), 
+                  label: Text('Set up'),
+                  onPressed: () => _scaffoldKey.currentState.openDrawer(),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (settings.baseUrl == "nada" || settings.zoneList == null) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text('Show you app logo here'),
+                CircularProgressIndicator(),
+              ],
+            ),
+          );
+        }
+        return _screens[_selectedIndex].widget;
+      }),
       drawer: Drawer(
         child: ListView(
           children: <Widget>[
@@ -73,25 +111,6 @@ class _WholeHomeAudioState extends State<WholeHomeAudio> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: _bottomNavItems(),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class FirstRoute extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('First Route'),
-      ),
-      body: Center(
-        child: RaisedButton(
-          child: Text('Open route'),
-          onPressed: () {
-            // Navigate to second route when tapped.
-          },
         ),
       ),
     );

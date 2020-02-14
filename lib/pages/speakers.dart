@@ -1,9 +1,9 @@
-import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wha_flutter/model/settings_model.dart';
 import 'package:wha_flutter/model/zones.dart';
+import 'package:wha_flutter/pages/settings.dart';
 
 class SpeakerWidget extends StatefulWidget {
   @override
@@ -11,21 +11,19 @@ class SpeakerWidget extends StatefulWidget {
 }
 
 class _SpeakerWidgetState extends State<SpeakerWidget> {
-  var _zones = new List<Zone>();
   Color c = Colors.blue[800];
-  String baseUrl;
+  //String baseUrl;
 
   @override
   void initState() {
     super.initState();
-    SharedPreferences.getInstance().then((SharedPreferences sp) {
-      baseUrl = sp.getString(SettingsNotifier.BASE_URL);
-      _getZones();
-    });
+    // SharedPreferences.getInstance().then((SharedPreferences sp) {
+    //   baseUrl = sp.getString(SettingsNotifier.BASE_URL);
+    //   _getZones();
+    // });
   }
 
-  void _toggleZoneProperty(int index, String property) {
-    Zone zone = _zones[index];
+  void _toggleZoneProperty(String url, Zone zone, String property) {
     var toggleValue = "";
     if (property == "pr") {
       toggleValue = zone.power;
@@ -34,68 +32,57 @@ class _SpeakerWidgetState extends State<SpeakerWidget> {
     }
 
     toggleValue = toggleValue == "00" ? "01" : "00";
-    print("toggle $property $toggleValue");
-
-    ZoneAPI.changeZone(baseUrl, _zones[index].zone, property, toggleValue)
+    print("speakers.dart toggle $property $toggleValue");
+    ZoneAPI.changeZone(url, zone.zone, property, toggleValue)
         .then((response) => _getZones());
   }
 
-  void _adjustVolume(int index, int adjustment) async {
+  void _adjustVolume(String url, Zone zone, int adjustment) async {
     print("volume adjust $adjustment");
-    ZoneAPI.changeZone(baseUrl, _zones[index].zone, "vo",
-            _zones[index].powerAdjust(adjustment))
+    ZoneAPI.changeZone(url, zone.zone, "vo",
+            zone.powerAdjust(adjustment))
         .then((response) => _getZones());
   }
 
-  void _adjustChannel(int index, int adjustment) async {
-    print("channel adjust $adjustment");
+  void _adjustChannel(String url, Zone zone, int adjustment) async {
+    print("speakers.dart channel adjust $adjustment");
 
-    ZoneAPI.changeZone(baseUrl, _zones[index].zone, "ch",
-            _zones[index].channelAdjust(adjustment))
+    ZoneAPI.changeZone(url, zone.zone, "ch",
+            zone.channelAdjust(adjustment))
         .then((response) => _getZones());
   }
 
   void _getZones() {
-    print('_getZones');
-    ZoneAPI.getZones(baseUrl).then((response) {
-      setState(() {
-        Iterable list = json.decode(response.body);
-        _zones = list.map((model) => Zone.fromJson(model)).toList();
-
-        if (_zones == null) {
-          _zones = [];
-        }
-      });
-    });
+    SettingsNotifier note = Provider.of<SettingsNotifier>(context, listen: false);
+    note.refreshZones();
   }
 
-  bool isPowerOn(int index) {
-    return _zones[index].power == "01";
+  bool isPowerOn(Zone zone) {
+    return zone.power == "01";
   }
 
-  Color _getPowerColor(index) {
-    return _zones[index].power == "00" ? Colors.grey[400] : c;
+  Color _getPowerColor(Zone zone) {
+    return zone.power == "00" ? Colors.grey[400] : c;
   }
 
-  Color _toggleColor(index) {
-    Zone zone = _zones[index];
+  Color _toggleColor(Zone zone) {
     return zone.power == "00" || zone.mute == "01" ? Colors.grey[400] : c;
   }
 
-  IconButton _getMuteButton(index) {
+  IconButton _getMuteButton(String url, Zone zone) {
     return IconButton(
       icon: Icon(
-          _zones[index].mute == "01" ? Icons.volume_off : Icons.volume_mute),
+          zone.mute == "01" ? Icons.volume_off : Icons.volume_mute),
       onPressed: () {
-        if (isPowerOn(index)) {
-          _toggleZoneProperty(index, "mu");
+        if (isPowerOn(zone)) {
+          _toggleZoneProperty(url, zone, "mu");
         }
       },
-      color: _toggleColor(index),
+      color: _toggleColor(zone),
     );
   }
 
-  Container _getVolumeButton(index, IconData volume) {
+  Container _getVolumeButton(String url, Zone zone, IconData volume) {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
@@ -106,18 +93,18 @@ class _SpeakerWidgetState extends State<SpeakerWidget> {
       child: IconButton(
         icon: Icon(volume),
         onPressed: () {
-          if (isPowerOn(index)) {
+          if (isPowerOn(zone)) {
             Icons.volume_up == volume
-                ? _adjustVolume(index, 1)
-                : _adjustVolume(index, -1);
+                ? _adjustVolume(url, zone, 1)
+                : _adjustVolume(url, zone, -1);
           }
         },
-        color: _getPowerColor(index),
+        color: _getPowerColor(zone),
       ),
     );
   }
 
-  Container _getChannelButton(index, IconData channel) {
+  Container _getChannelButton(String url, Zone zone, IconData channel) {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
@@ -128,31 +115,48 @@ class _SpeakerWidgetState extends State<SpeakerWidget> {
       child: IconButton(
         icon: Icon(channel),
         onPressed: () {
-          if (isPowerOn(index)) {
+          if (isPowerOn(zone)) {
             Icons.skip_previous == channel
-                ? _adjustChannel(index, -1)
-                : _adjustChannel(index, 1);
+                ? _adjustChannel(url, zone, -1)
+                : _adjustChannel(url, zone, 1);
           }
         },
-        color: _getPowerColor(index),
+        color: _getPowerColor(zone),
       ),
     );
   }
 
-  @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      itemCount: _zones.length,
+    return Consumer<SettingsNotifier>(builder: (_, settings, __) {
+      print("speakers.dart ${settings.baseUrl} zone list ${settings.zoneList}");
+      if (settings.baseUrl == null) {
+        return SettingsWidget();
+      }
+
+      if (settings.baseUrl == "nada" || settings.zoneList == null) {
+        return Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text('Show you app logo here'),
+              CircularProgressIndicator(),
+            ],
+          ),
+        );
+      }
+
+      return ListView.builder(
+      itemCount: settings.zoneList.length,
       itemBuilder: (context, index) => Card(
         child: ExpansionTile(
           leading: IconButton(
               icon: Icon(Icons.power_settings_new),
-              color: _getPowerColor(index),
-              onPressed: (() => _toggleZoneProperty(index, "pr"))),
+              color: _getPowerColor(settings.zoneList[index]),
+              onPressed: (() => _toggleZoneProperty(settings.baseUrl, settings.zoneList[index], "pr"))),
           trailing: CircleAvatar(
             backgroundColor: Colors.blue[200],
             child: Text(
-              _zones[index].volume,
+              settings.zoneList[index].volume,
             ),
           ),
           title: Column(
@@ -163,10 +167,8 @@ class _SpeakerWidgetState extends State<SpeakerWidget> {
                 children: <Widget>[
                   Consumer<SettingsNotifier>(
                     builder: (_, settings, __) => Text(
-                      settings.getZoneMap().length != _zones.length
-                          ? _zones[index].zone
-                          : settings.getZoneMap()[_zones[index].zone],
-                      style: TextStyle(
+                      settings.getZoneLabel(index)?? "Zone ${settings.zoneList[index].zone}"
+                      ,style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18.0,
                       ),
@@ -202,7 +204,7 @@ class _SpeakerWidgetState extends State<SpeakerWidget> {
                   width: 10,
                 ),
                 Text(
-                  _zones[index].volume,
+                  settings.zoneList[index].volume,
                   style: TextStyle(
                       fontWeight: FontWeight.bold, fontSize: 25.0, color: c),
                 ),
@@ -226,7 +228,7 @@ class _SpeakerWidgetState extends State<SpeakerWidget> {
                   width: 10,
                 ),
                 Text(
-                  _zones[index].channel,
+                  settings.zoneList[index].channel,
                   style: TextStyle(
                       fontWeight: FontWeight.bold, fontSize: 25.0, color: c),
                 ),
@@ -245,24 +247,24 @@ class _SpeakerWidgetState extends State<SpeakerWidget> {
                       ),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: _getMuteButton(index),
+                    child: _getMuteButton(settings.baseUrl, settings.zoneList[index]),
                   ),
                   SizedBox(
                     width: 10,
                   ),
-                  _getVolumeButton(index, Icons.volume_down),
+                  _getVolumeButton(settings.baseUrl, settings.zoneList[index], Icons.volume_down),
                   SizedBox(
                     width: 10,
                   ),
-                  _getVolumeButton(index, Icons.volume_up),
+                  _getVolumeButton(settings.baseUrl, settings.zoneList[index], Icons.volume_up),
                   SizedBox(
                     width: 10,
                   ),
-                  _getChannelButton(index, Icons.skip_previous),
+                  _getChannelButton(settings.baseUrl, settings.zoneList[index], Icons.skip_previous),
                   SizedBox(
                     width: 10,
                   ),
-                  _getChannelButton(index, Icons.skip_next),
+                  _getChannelButton(settings.baseUrl, settings.zoneList[index], Icons.skip_next),
                   //IconButton(icon: Icon(Icons.volume_up), color: Colors.blue[800], onPressed: () {},),
                 ],
               ),
@@ -271,5 +273,6 @@ class _SpeakerWidgetState extends State<SpeakerWidget> {
         ),
       ),
     );
+    });
   }
 }
